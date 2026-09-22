@@ -1,12 +1,15 @@
 import os
 from openai import OpenAI
 from .base import Model
+from .config import ModelConfig
 from .types import ModelRequest, ModelResponse
 
 
 class HuggingFaceModel(Model):
 
-    def __init__(self):
+    def __init__(self, config: ModelConfig):
+        self.config = config
+
         self.client = OpenAI(
             base_url="https://router.huggingface.co/v1",
             api_key=os.getenv("HF_TOKEN"),
@@ -14,10 +17,10 @@ class HuggingFaceModel(Model):
 
     def generate(self, request: ModelRequest) -> ModelResponse:
         response = self.client.chat.completions.create(
-            model=request.model,
+            model=self.config.model,
             messages=request.messages,
-            temperature=request.temperature,
-            max_tokens=request.max_tokens,
+            temperature=self.config.temperature,
+            max_tokens=self.config.max_tokens,
         )
 
         return ModelResponse(
