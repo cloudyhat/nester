@@ -69,3 +69,38 @@ class TestToolExecutor(unittest.TestCase):
         self.assertEqual(result.tool_name, "failing_tool")
         self.assertIsNone(result.output)
         self.assertEqual(result.error, "Tool failed")
+
+    def test_execute_many(self):
+        def failing_tool():
+            raise RuntimeError("Tool failed")
+        
+        self.registry.register("failing_tool", failing_tool)
+
+        tool_calls = [
+            ToolCall(id="call_004", name="list_files", arguments={"directory": "src"}),
+            ToolCall(id="call_005", name="unknown_tool", arguments={}),
+            ToolCall(id="call_006", name="failing_tool", arguments={})
+        ]
+
+        results = self.executor.execute_many(tool_calls)
+
+        self.assertEqual(
+            [result.tool_call_id for result in results],
+            ["call_004", "call_005", "call_006"]
+        )
+        self.assertEqual(len(results), 3)
+        self.assertTrue(results[0].success)
+        self.assertEqual(results[0].tool_call_id, "call_004")
+        self.assertEqual(results[0].tool_name, "list_files")
+        self.assertEqual(results[0].output, ["main.py", "utils.py"])
+
+        self.assertFalse(results[1].success)
+        self.assertEqual(results[1].tool_call_id, "call_005")
+        self.assertEqual(results[1].tool_name, "unknown_tool")
+        self.assertIsNone(results[1].output)
+
+        self.assertEqual(results[2].error, "Tool failed")
+        self.assertFalse(results[2].success)
+        self.assertEqual(results[2].tool_call_id, "call_006")
+        self.assertEqual(results[2].tool_name, "failing_tool")
+        self.assertIsNone(results[2].output)

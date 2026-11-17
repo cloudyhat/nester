@@ -24,3 +24,7 @@ class ToolExecutor:
                 error=str(e),
                 success=False
             )
+
+    def execute_many(self, tool_calls: list[ToolCall]) -> list[ToolExecutionResult]:
+        results = [self.execute(tool_call) for tool_call in tool_calls]
+        return results
